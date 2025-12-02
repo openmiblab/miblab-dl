@@ -7,8 +7,6 @@ import numpy as np
 from miblab import zenodo_fetch
 import miblab_dl as dl
 
-from plot import volume_to_mosaic
-
 
 def test_fatwater():
     
