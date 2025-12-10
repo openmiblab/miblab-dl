@@ -87,7 +87,18 @@ def _predict_mask_folder(model, input_folder, output_folder):
     with tempfile.TemporaryDirectory() as predictions:
     
         # Predict and save results in a temporary folder
-        cmd = f"nnUNetv2_predict -d Dataset001_FatWaterPredictor -i {input_folder} -o {predictions} -f 0 1 2 3 4 -tr nnUNetTrainer -c 3d_fullres -p nnUNetPlans"
+        # cmd = f"nnUNetv2_predict -d Dataset001_FatWaterPredictor -i {input_folder} -o {predictions} -f 0 1 2 3 4 -tr nnUNetTrainer -c 3d_fullres -p nnUNetPlans"
+
+        cmd = [
+            "nnUNetv2_predict",
+            "-d", "Dataset001_FatWaterPredictor",
+            "-i", input_folder,
+            "-o", predictions,
+            "-f", "0", "1", "2", "3", "4",
+            "-tr", "nnUNetTrainer",
+            "-c", "3d_fullres",
+            "-p", "nnUNetPlans",
+        ]
         
         process = subprocess.Popen(
             cmd, 
@@ -109,7 +120,16 @@ def _predict_mask_folder(model, input_folder, output_folder):
         source = os.path.join(model, 'Dataset001_FatWaterPredictor', 'nnUNetTrainer__nnUNetPlans__3d_fullres', "crossval_results_folds_0_1_2_3_4")
         pproc = os.path.join(source, 'postprocessing.pkl')
         plans = os.path.join(source, 'plans.json')
-        cmd = f"nnUNetv2_apply_postprocessing -i {predictions} -o {output_folder} -pp_pkl_file {pproc} -np 8 -plans_json {plans}"
+        # cmd = f"nnUNetv2_apply_postprocessing -i {predictions} -o {output_folder} -pp_pkl_file {pproc} -np 8 -plans_json {plans}"
+
+        cmd = [
+            "nnUNetv2_apply_postprocessing",
+            "-i", predictions,
+            "-o", output_folder,
+            "-pp_pkl_file", pproc,
+            "-np", "8",
+            "-plans_json", plans,
+        ]
 
         process = subprocess.Popen(
             cmd, 
