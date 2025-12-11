@@ -13,7 +13,7 @@ import tempfile
 import numpy as np
 import nibabel as nib
 from miblab import zenodo_fetch
-from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
+# from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
 # from nnunetv2.postprocessing.remove_connected_components import apply_postprocessing_to_folder
 
 
@@ -100,8 +100,8 @@ def _predict_mask_numpy(model, op_phase, in_phase, tmp):
     nib.save(nifti_ip, file_ip)
 
     # Create predictions in a temporary output_folder
-    #__predict_mask_folder(model, input_folder, output_folder, predictions)
-    _predict_mask_folder(model, input_folder, output_folder)
+    _predict_mask_folder(model, input_folder, output_folder, predictions)
+    #__predict_mask_folder(model, input_folder, output_folder)
 
     # Return result as binary numpy array
     mask_file = os.path.join(output_folder, f"{case_id}.nii.gz")
@@ -110,27 +110,24 @@ def _predict_mask_numpy(model, op_phase, in_phase, tmp):
     return waterdom
 
 
-def _predict_mask_folder(model, input_folder, predictions):
+# def __predict_mask_folder(model, input_folder, predictions):
 
-    # Initialize predictor
-    plans_dir = os.path.join(
-        model, "Dataset001_FatWaterPredictor",
-        "nnUNetTrainer__nnUNetPlans__3d_fullres"
-    )
-    predictor = nnUNetPredictor()
-    predictor.initialize_from_trained_model_folder(plans_dir, None)
-    predictor.predict_from_files(input_folder, predictions)
+#     # TOD: consider API for numpy arrays to avoid read and write to temp folders
 
-    # Skip the postprocessing - not managed to get this to work 
-    # yet in the python API but should be fixable.
+#     # Initialize predictor
+#     plans_dir = os.path.join(
+#         model, "Dataset001_FatWaterPredictor",
+#         "nnUNetTrainer__nnUNetPlans__3d_fullres"
+#     )
+#     predictor = nnUNetPredictor()
+#     predictor.initialize_from_trained_model_folder(plans_dir, None)
+#     predictor.predict_from_files(input_folder, predictions)
+
+#     # Skip the postprocessing - not managed to get this to work 
+#     # yet in the python API but should be fixable.
 
 
-def __predict_mask_folder(model, input_folder, output_folder, predictions):
-    """Original implementation with CLI.
-    
-    This works locally but fails on the cluster - command not found. 
-    Should be fixable but for now going forward with the python API.
-    """
+def _predict_mask_folder(model, input_folder, output_folder, predictions):
 
     # These two variables are not used but we are setting to a 
     # dummy value to silence the warnings
@@ -139,6 +136,23 @@ def __predict_mask_folder(model, input_folder, output_folder, predictions):
 
     # Folder containing the model weights
     os.environ["nnUNet_results"] = model
+
+    # # Determine conda env bin (if available)
+    # conda_prefix = os.environ.get("CONDA_PREFIX")  # set when env active
+    # conda_bin = os.path.join(conda_prefix, "bin") if conda_prefix else None
+
+    # def find_exec(name):
+    #     # search CONDA_PREFIX/bin first, then PATH
+    #     if conda_bin:
+    #         exe = shutil.which(name, path=conda_bin + os.pathsep + os.environ.get("PATH", ""))
+    #     else:
+    #         exe = shutil.which(name)
+    #     if exe is None:
+    #         raise RuntimeError(f"{name} not found. Activate conda env or install the CLI.")
+    #     return exe
+
+    # nnunet_predict = find_exec("nnUNetv2_predict")
+    # nnunet_post = find_exec("nnUNetv2_apply_postprocessing")
     
     # Predict and save results in the temporary folder
     cmd = [
