@@ -71,20 +71,28 @@ def fatwater(op_phase, in_phase, te_o=None, te_i=None, t2s_w=15, t2s_f=10, cache
     
     print('Predicting fat and water images..')
 
-    waterdom = _predict_mask_numpy(model, op_phase, in_phase, cachedir)
+    # Making temporary folders in persistent cache is safer than tempfile on HPC
+    tmp = os.path.join(cachedir, 'tmp')
+
+    # Compute
+    waterdom = _predict_mask_numpy(model, op_phase, in_phase, tmp)
     fat, water = _compute_fatwater(waterdom, op_phase, in_phase, te_o, te_i, t2s_w, t2s_f)
     fat[fat < 0] = 0
     water[water < 0] = 0
+    
+    # Clean up temp dirs
+    shutil.rmtree(tmp)
     return fat, water
 
 
 
-def _predict_mask_numpy(model, op_phase, in_phase, cachedir):
+def _predict_mask_numpy(model, op_phase, in_phase, tmp):
     
-    # Making temporary folders in persistent cache is safer than tempfile on HPC
-    input_folder = os.path.join(cachedir, 'input_folder')
-    output_folder = os.path.join(cachedir, 'output_folder')
+    input_folder = os.path.join(tmp, 'input_folder')
+    predictions = os.path.join(tmp, 'predictions')
+    output_folder = os.path.join(tmp, 'output_folder')
     _remake_dir(input_folder)
+    _remake_dir(predictions)
     _remake_dir(output_folder)
 
     # Save numpy arrays as nifti
@@ -97,32 +105,24 @@ def _predict_mask_numpy(model, op_phase, in_phase, cachedir):
     nib.save(nifti_ip, file_ip)
 
     # Create predictions in a temporary output_folder
-    _predict_mask_folder(model, input_folder, output_folder, cachedir)
+    _predict_mask_folder(model, input_folder, output_folder, predictions)
 
     # Return result as binary numpy array
     mask_file = os.path.join(output_folder, f"{case_id}.nii.gz")
     waterdom = nib.load(mask_file).get_fdata().astype(np.int8)
-    
-    # Clean up temp dirs
-    shutil.rmtree(input_folder)
-    shutil.rmtree(output_folder)  
 
     return waterdom
 
 
-def _predict_mask_folder(model, input_folder, output_folder, cachedir):
+def _predict_mask_folder(model, input_folder, output_folder, predictions):
 
     # These two variables are not used but we are setting to a 
     # dummy value to silence the warnings
-    os.environ["nnUNet_raw"] = os.getcwd() 
-    os.environ["nnUNet_preprocessed"] = os.getcwd()
+    os.environ["nnUNet_raw"] = input_folder 
+    os.environ["nnUNet_preprocessed"] = input_folder
 
     # Folder containing the model weights
     os.environ["nnUNet_results"] = model
-
-    # Making temporary folders in persistent cache
-    predictions = os.path.join(cachedir, 'predictions')
-    _remake_dir(predictions)
     
     # Predict and save results in the temporary folder
     cmd = [
@@ -149,10 +149,12 @@ def _predict_mask_folder(model, input_folder, output_folder, cachedir):
     for line in process.stdout:
         print(line, end="")
 
-    process.wait()  # wait for completion
+    retcode = process.wait()
+    if retcode != 0:
+        raise RuntimeError(f"Prediction failed with exit code {retcode}")
     
     # Run post-processing
-    os.makedirs(output_folder, exist_ok=True)
+    # os.makedirs(output_folder, exist_ok=True)
     source = os.path.join(model, 'Dataset001_FatWaterPredictor', 'nnUNetTrainer__nnUNetPlans__3d_fullres', "crossval_results_folds_0_1_2_3_4")
     pproc = os.path.join(source, 'postprocessing.pkl')
     plans = os.path.join(source, 'plans.json')
@@ -179,9 +181,10 @@ def _predict_mask_folder(model, input_folder, output_folder, cachedir):
     for line in process.stdout:
         print(line, end="")
 
-    process.wait()  # wait for completion
+    retcode = process.wait()
+    if retcode != 0:
+        raise RuntimeError(f"Postprocessing failed with exit code {retcode}")
 
-    shutil.rmtree(predictions)
 
 
 def _compute_fatwater(waterdom, op_phase, in_phase, te_o, te_i, t2s_w, t2s_f):
