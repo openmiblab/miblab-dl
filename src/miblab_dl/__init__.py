@@ -1,3 +1,3 @@
-from miblab_dl.fatwatermap import fatwater, cleanup
+from miblab_dl.fatwatermap import fatwater, clear_cache
 
 

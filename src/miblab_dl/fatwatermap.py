@@ -8,25 +8,14 @@ import subprocess
 import shutil
 from platformdirs import user_cache_dir
 from pathlib import Path
-
+import tempfile
 
 import numpy as np
 import nibabel as nib
 from miblab import zenodo_fetch
+from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
+# from nnunetv2.postprocessing.remove_connected_components import apply_postprocessing_to_folder
 
-
-
-
-def cleanup():
-    cachedir = Path(user_cache_dir("miblab-dl"))
-    shutil.rmtree(cachedir)
-
-
-def _remake_dir(path):
-    path = Path(path)
-    if path.exists():
-        shutil.rmtree(path)
-    path.mkdir(parents=True)
 
 
 def _cache_dir(cache=None):
@@ -47,6 +36,12 @@ def _cache_dir(cache=None):
     cache_dir = user_cache_dir("miblab-dl")
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
+
+
+def clear_cache(cache=None):
+    cachedir = _cache_dir(cache)
+    shutil.rmtree(cachedir)
+
 
 
 def fatwater(op_phase, in_phase, te_o=None, te_i=None, t2s_w=15, t2s_f=10, cache=None):
@@ -71,8 +66,8 @@ def fatwater(op_phase, in_phase, te_o=None, te_i=None, t2s_w=15, t2s_f=10, cache
     
     print('Predicting fat and water images..')
 
-    # Making temporary folders in persistent cache is safer than tempfile on HPC
-    tmp = os.path.join(cachedir, 'tmp')
+    # Making temporary folders in persistent cache is safer on HPC
+    tmp = tempfile.mkdtemp(prefix="tmp_", dir=cachedir)
 
     # Compute
     waterdom = _predict_mask_numpy(model, op_phase, in_phase, tmp)
@@ -91,9 +86,9 @@ def _predict_mask_numpy(model, op_phase, in_phase, tmp):
     input_folder = os.path.join(tmp, 'input_folder')
     predictions = os.path.join(tmp, 'predictions')
     output_folder = os.path.join(tmp, 'output_folder')
-    _remake_dir(input_folder)
-    _remake_dir(predictions)
-    _remake_dir(output_folder)
+    os.makedirs(input_folder)
+    os.makedirs(predictions)
+    os.makedirs(output_folder)
 
     # Save numpy arrays as nifti
     case_id = "dixon"
@@ -105,7 +100,8 @@ def _predict_mask_numpy(model, op_phase, in_phase, tmp):
     nib.save(nifti_ip, file_ip)
 
     # Create predictions in a temporary output_folder
-    _predict_mask_folder(model, input_folder, output_folder, predictions)
+    #__predict_mask_folder(model, input_folder, output_folder, predictions)
+    _predict_mask_folder(model, input_folder, output_folder)
 
     # Return result as binary numpy array
     mask_file = os.path.join(output_folder, f"{case_id}.nii.gz")
@@ -114,7 +110,27 @@ def _predict_mask_numpy(model, op_phase, in_phase, tmp):
     return waterdom
 
 
-def _predict_mask_folder(model, input_folder, output_folder, predictions):
+def _predict_mask_folder(model, input_folder, predictions):
+
+    # Initialize predictor
+    plans_dir = os.path.join(
+        model, "Dataset001_FatWaterPredictor",
+        "nnUNetTrainer__nnUNetPlans__3d_fullres"
+    )
+    predictor = nnUNetPredictor()
+    predictor.initialize_from_trained_model_folder(plans_dir, None)
+    predictor.predict_from_files(input_folder, predictions)
+
+    # Skip the postprocessing - not managed to get this to work 
+    # yet in the python API but should be fixable.
+
+
+def __predict_mask_folder(model, input_folder, output_folder, predictions):
+    """Original implementation with CLI.
+    
+    This works locally but fails on the cluster - command not found. 
+    Should be fixable but for now going forward with the python API.
+    """
 
     # These two variables are not used but we are setting to a 
     # dummy value to silence the warnings
