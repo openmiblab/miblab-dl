@@ -1,0 +1,3 @@
+dbdicom
+pytest
+pytest-cov

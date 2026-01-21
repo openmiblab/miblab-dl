@@ -1,10 +1,9 @@
 import os
-import shutil
 
 import dbdicom as db
 import numpy as np
 
-from miblab_data.zenodo import fetch as zenodo_fetch
+from miblab_data.zenodo import fetch
 import miblab_dl as dl
 
 
@@ -17,7 +16,8 @@ def test_fatwater():
     testdatadoi = '15489381'
 
     # Download ZIP file to temp directory
-    folder = zenodo_fetch(testdata, tmp_dir, testdatadoi, extract=True)
+    folder = fetch(testdata, tmp_dir, testdatadoi, extract=True)
+    # folder = download(testdatadoi, testdata, tmp_dir, extract=True)
 
     # Read DICOM data
     series_op = db.series(folder, contains='out_phase')[0]

@@ -22,7 +22,7 @@ Installation
 
 Install miblab-dl from source:
 
->>> pip install -e path\to\miblab-dl
+>>> pip install -e path\to\pckg-miblab-dl
 
 Install dev requirements:
 
@@ -52,11 +52,11 @@ after changing
 Run test suite and check test coverage
 --------------------------------------
 
-cd to //miblab-package top folder
->>> pytest --cov=miblab-package --cov-report term-missing
+cd to //miblab-dl top folder
+>>> pytest --cov=miblab-dl --cov-report term-missing
 
 To run a specific file (eg. test_utils) only, do:
->>> pytest tests/test_utils.py --cov=/miblab-package --cov-report term-missing
+>>> pytest tests/test_utils.py --cov=/miblab-dl --cov-report term-missing
 
 
 Check tests in docstrings
@@ -72,13 +72,17 @@ To insert the expected test results, do:
 Creating a new release (from a fork)
 ------------------------------------
 
+Not required but good practice - prepare release:
+
 - Enforce PEP8 (see above)
 - Run the test suite in a clean environment (see above) and check test 
-  coverage (see above)
-- Update the version number in pyproject.toml, push to dev and check that 
-  all tests pass. Fix issues if not.
-- Merge the dev branch with the main branch. 
-- Create a release on github, with the main branch as target.
+  coverage (see above).
+- Update the main branch
+- Create a release on github with the main branch as target.
+
+Required:
+
+- Update the version number in pyproject.toml
 - Create a release on PyPI (see below).
 
 
