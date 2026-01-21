@@ -12,7 +12,7 @@ import tempfile
 
 import numpy as np
 import nibabel as nib
-from miblab import zenodo_fetch
+from miblab_data.zenodo import fetch as zenodo_fetch
 # from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
 # from nnunetv2.postprocessing.remove_connected_components import apply_postprocessing_to_folder
 

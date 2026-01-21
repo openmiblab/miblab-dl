@@ -6,12 +6,12 @@ requires = ['setuptools>=61.2']
 
 [project]
 name = "miblab-dl"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
   'platformdirs',
   'numpy',
   'nibabel',
-  'miblab[data]',
+  'miblab-data',
   'nnunetv2',
 ]
 # optional information
@@ -48,18 +48,6 @@ keywords = [
 [project.urls]
 "Homepage" = "https://miblab.org/"
 "Source Code" = "https://github.com/openmiblab/miblab-dl"
-
-[project.optional-dependencies]
-dev = [
-  'dbdicom',
-  'miblab[data]',
-  'pytest',
-  'pytest-cov',
-  'build',
-  'twine',
-  'autopep8',
-  'pycodestyle',
-]
 
 [tool.setuptools]
 # ...

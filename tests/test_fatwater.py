@@ -4,7 +4,7 @@ import shutil
 import dbdicom as db
 import numpy as np
 
-from miblab import zenodo_fetch
+from miblab_data.zenodo import fetch as zenodo_fetch
 import miblab_dl as dl
 
 
